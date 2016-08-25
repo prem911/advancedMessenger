@@ -87,11 +87,57 @@ $ mfpdev server add 'to point to the MobileFirst Server created in Bluemix'
 ? Enter the context root of the MobileFirst administrative services: Use Default
 ? Enter the MobileFirst Server connection timeout in seconds: Use Default
 ```
+```sh
+$ mfpdev app register 'ensure that working directory is am/advancedMessenger'
+$ cordova prepare
+```
+Open mfpconsole in browser ( http://<your-mfp-server>.mybluemix.net/mfpconsole ) or refresh if already open
+advancedMessenger is now shown in the list of Applications
+```sh
+mfpdev app preview 'preview using mfp commands, select simple browser'
+```
+Open Developer Console in the browser and look at console. You will find messages from worklight.js.
+`Note that these calls have happened after the data load`
 
+##### Live reload using mfpdev - Use gulp watch
+gulp watch checks for changes in source files and prepares the www contents.
+Any change in source will regenerate the www and the browser preview will change.
+```sh
+$ gulp watch
+```
 
+##### Catching mfpjsloaded event
+We should do all backend invokations only after MFP API is initialised. To do this we need to catch an event called mfpjsloaded. This is defined in `bootstrap.js` in plugins\cordova-plugin-mfp
+Changes required in `app.ts`
 
+```sh
+import {Component, Renderer} from '@angular/core';
+import {Platform, ionicBootstrap} from 'ionic-angular';
+import {StatusBar} from 'ionic-native';
+import {TabsPage} from './pages/tabs/tabs';
 
+@Component({
+  template: '<ion-nav [root]="rootPage"></ion-nav>'
+})
+export class MyApp {
+  private rootPage:any;
 
-
+  constructor(private platform:Platform, renderer: Renderer ) {
+    console.log('constructor done');
+    renderer.listenGlobal('document', 'mfpjsloaded', () => {
+      console.log('--> MFP API init complete');
+      this.MFPInitComplete();
+    })
+    platform.ready().then(() => {
+      StatusBar.styleDefault();
+    });
+  }
+  MFPInitComplete(){
+    console.log('--> MFPInitComplete function called')
+    this.rootPage = TabsPage; 
+  }
+}
+ionicBootstrap(MyApp)
+```
 
 
