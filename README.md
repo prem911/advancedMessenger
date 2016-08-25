@@ -1,5 +1,5 @@
 # Lets build advancedMessenger hybrid app
-## Lab 2.62
+## Lab 2.62 - Adding MobileFirst SDK and registering app on server
 ### Objectives
 - Cloning the github project
 - Creating a node.js application in Bluemix to mock backend server
