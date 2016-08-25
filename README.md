@@ -139,5 +139,7 @@ export class MyApp {
 }
 ionicBootstrap(MyApp)
 ```
+Save `app.ts`. Browser preview refreshes. Look at the sequence of calls in the console.
+Now all the backend calls are happening only after MFP API has been initialised.
 
 
