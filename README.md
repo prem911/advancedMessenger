@@ -84,8 +84,8 @@ $ mfpdev server add 'to point to the MobileFirst Server created in Bluemix'
 ? Enter the MobileFirst Server administrator login ID: admin
 ? Enter the MobileFirst Server administrator password: <your-admin-pwd>
 ? Save the administrator password for this server?: Y
-? Enter the context root of the MobileFirst administrative services: Enter key
-? Enter the MobileFirst Server connection timeout in seconds: Enter key
+? Enter the context root of the MobileFirst administrative services: Use Default
+? Enter the MobileFirst Server connection timeout in seconds: Use Default
 ```
 
 
