@@ -1,4 +1,4 @@
-# Lets build advancedMessenger hybrid app
+# Let's build advancedMessenger hybrid app
 ## Lab 2.62
 ### Objectives
 - Cloning the github project
@@ -27,3 +27,18 @@ Email > 'write your Bluemix id'
 Password > 'write your Bluemix password'
 $ cf push 'give-a-unique-name-to-your-app' -m 512M
 ```
+Open Browser and point to http://<give-a-unique-name-to-your-app>.mybluemix.net/apis
+
+It should return **Mock APIs are running**
+
+#### Creating MobileFirst Foundation Service in Bluemix
+Open http://bluemix.net and login
+
+Goto Catalog / Mobile
+
+Click Mobile Foundation to create the service. Give a name to the service. Choose Developer Edition
+
+
+
+
+
