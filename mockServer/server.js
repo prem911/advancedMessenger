@@ -8,6 +8,7 @@ var express = require('express'),
 app.use(cors());
 app.use(bodyParser.json());
 app.use(compression());
+app.set('port', process.env.PORT || 4567);
 
 app.get('/api', function (req, res) {
     res.send('Mock APIs are running');
@@ -43,6 +44,6 @@ app.get('/news', function (req, res) {
 });
 
 
-app.listen(4567, function(){
-    console.log('Express server listening on port 4567');
+app.listen(app.get('port'), function(){
+    console.log('Express server listening on port ' + app.get('port'));
 });
