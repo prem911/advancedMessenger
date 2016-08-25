@@ -142,4 +142,158 @@ ionicBootstrap(MyApp)
 Save `app.ts`. Browser preview refreshes. Look at the sequence of calls in the console.
 Now all the backend calls are happening only after MFP API has been initialised.
 
+## Lab 2.63 - Using Java and Javascript adapters to perform backend calls
+### Objectives
+- Create Javascript Adapter - EmployeeAdapter
+- Create Java Adapter from a sample
+- Invoking the JavaScript Adapter from client code
+- Invoking the JavaHttp Adapter from client code
+
+#### Create Javascript Adapter - EmployeeAdapter
+Open a new tab in `Terminal`
+
+Set the working directory to am/
+
+Open project in Visual Code from 'am' folder if not already open
+
+```sh
+$ mfpdev adapter create
+? Enter adapter name: employeeAdapter
+? Select adapter type: HTTP
+? Enter group ID: com.adapters
+```
+A new HTTP adapter is created. This adapter will call http://{your-mock-server}.mybluemix.net/employees
+> Try this bluemix URL in your browser to see the json output.
+> You will see a json data dump of few random users.
+
+In Visual Studio Code, expand employeeAdapter look at `pom.xml` and `adapter.xml`
+
+In `adapter.xml` change protocol to http, domain to {your-mock-server}.mybluemix.net and port to 80
+
+Remove the two procedures and write a new one
+<procedure name="getRating"/>
+
+Modify `employeeAdapter-impl.js`
+```sh
+function getRating() {
+	var input = {
+	    method : 'get',
+	    returnedContentType : 'json',
+	    path : 'employees'
+	};
+	return MFP.Server.invokeHttp(input);
+}
+```
+In `Terminal`
+```sh
+$ cd employeeAdapter/
+$ mfpdev adapter build 'It should result in Successfully built adapter'
+$ mfpdev adapter deploy 'Deploys it to the MobileFirst Server in Bluemix'
+```
+> Refresh the mfpConsole to find the new adapter
+
+Click employeeAdapter, check Configurations and Resources tab.
+In Resources tab, Security defined is DEFAULT_SCOPE
+
+Goto Runtime Settings / Confidential Clients, add a new Test Client ( `this should not be done for production servers` )
+Give Display Name as Test Client, ID as test, Secret as test and Allowed Scope as '**' ( double asterix )
+
+Go to EmployeeAdapter / Resources Tab and open Swagger Document.
+
+We can test /getRating.
+> Execute without specifying any scope. We will get 401
+
+> Specify the DEFAULT_SCOPE by clicking the toggle button on the right side and Authorize. Give test/test in Challenge window. Now try the api and it will show the same json result. This makes the API calls through adapters scoped and safe.
+
+##### Changing the endpoint url of employeeAdapter
+Add a property in `adapter.xml`
+```sh
+<property name="endpoint" displayName="Endpoint" defaultValue="employees"/>
+```
+
+Modify `employeeAdapter-impl.js`
+```sh
+function getRating() {
+	var endpoint = MFP.Server.getPropertyValue("endpoint");
+	var input = {
+	    method : 'get',
+	    returnedContentType : 'json',
+	    path : endpoint
+	};
+	return MFP.Server.invokeHttp(input);
+}
+```
+Build and deploy these adapter changes
+```sh
+$ mfpdev adapter build
+$ mfpdev adapter deploy
+```
+> Goto mfpconsole / employeeAdapter / Configurations.
+> Change "Endpoint" value to "news" and test the /getRating api in Swagger Docs.
+You should see a news json. Reset the "Endpoint" back to "employees"
+
+#### Create Java Adapter from a sample
+In the browser, click on Tutorials and Developing Adapters/Java/HTTP Adapter
+This describes how to define and invoke Java Adapters
+Download the sample adapter from this page.
+Unzip the file and copy the JavaHTTP folder to am/ folder
+```sh
+$ cd && cd Downloads/
+$ unzip Adapters-release80.zip
+$ cd Adapters-release80
+$ cp -R JavaHTTP/ /home/ibm/dev/workspaces/am/
+$ cd ~/dev/workspaces/am/JavaHTTP/
+```
+
+Look at the JavaHTTP folder's `adapter.xml` in Visual Studio Code
+Change the displayName and description to NewsJavaAdapter
+
+Open `JavaHTTPResource.java`
+
+Change to
+```sh
+public static void init() {
+	client = HttpClientBuilder.create().build();
+	host = new HttpHost("{your-mock-server}.mybluemix.net", 80, "http");
+}
+
+public void execute(HttpUriRequest req, HttpServletResponse resultResponse)
+		throws IOException,
+		IllegalStateException, SAXException {
+	HttpResponse JSONResponse = client.execute(host, req);
+	ServletOutputStream os = resultResponse.getOutputStream();
+	if (JSONResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK){
+		resultResponse.addHeader("Content-Type", "application/json");
+		JSONObject result = JSONObject.parse(JSONResponse.getEntity().getContent());
+		String json = result.toString();
+		os.write(json.getBytes(Charset.forName("UTF-8")));
+
+	}else{
+		resultResponse.setStatus(JSONResponse.getStatusLine().getStatusCode());
+		JSONResponse.getEntity().getContent().close();
+		os.write(JSONResponse.getStatusLine().getReasonPhrase().getBytes());
+	}
+	os.flush();
+	os.close();
+}
+
+@GET
+@Produces("application/json")
+public void get(@Context HttpServletResponse response)
+		throws IOException, IllegalStateException, SAXException {
+		execute(new HttpGet("/news"), response);
+}
+```
+```sh
+$ mfpdev adapter build
+$ mfpdev adapter deploy 'optionally try out deploying an adapter from the mfpconsole, Actions/Deploy Adapter/pick the file from target folder of JavaHTTP'
+```
+
+> Test the api using Swagger docs. This too has DEFAULT_SCOPE and can be tested similar to /getRating
+
+#### Invoking the JavaScript Adapter from client code
+
+#### Invoking the JavaHttp Adapter from client code
+
+
 
