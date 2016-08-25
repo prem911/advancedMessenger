@@ -54,12 +54,12 @@ $ code . 'This opens the project in Visual Studio Code'
 ```
 click the Search icon in the left side toolbar and search for 'localhost'
 
-Goto `employee-provider.ts` and replace the url with http://<your-mock-server>.mybluemix.net/employees
+Goto `employee-provider.ts` and replace the url with http://{your-mock-server}.mybluemix.net/employees
 
 Goto `news-provider.ts` and replace the url with
-http://<your-mock-server>.mybluemix.net/news
+http://{your-mock-server}.mybluemix.net/news
 
-Goto `schedule-provider.ts` and replace the url with http://<your-mock-server>.mybluemix.net/schedule
+Goto `schedule-provider.ts` and replace the url with http://{your-mock-server}.mybluemix.net/schedule
 
 Save all files
 
@@ -91,7 +91,7 @@ $ mfpdev server add 'to point to the MobileFirst Server created in Bluemix'
 $ mfpdev app register 'ensure that working directory is am/advancedMessenger'
 $ cordova prepare
 ```
-Open mfpconsole in browser ( http://<your-mfp-server>.mybluemix.net/mfpconsole ) or refresh if already open
+Open mfpconsole in browser ( http://{your-mfp-server}.mybluemix.net/mfpconsole ) or refresh if already open
 advancedMessenger is now shown in the list of Applications
 ```sh
 mfpdev app preview 'preview using mfp commands, select simple browser'
@@ -103,11 +103,11 @@ Open Developer Console in the browser and look at console. You will find message
 gulp watch checks for changes in source files and prepares the www contents.
 Any change in source will regenerate the www and the browser preview will change.
 ```sh
-$ gulp watch
+$ gulp watch 'working directory should be am/advancedMessenger'
 ```
 
 ##### Catching mfpjsloaded event
-We should do all backend invokations only after MFP API is initialised. To do this we need to catch an event called mfpjsloaded. This is defined in `bootstrap.js` in plugins\cordova-plugin-mfp
+We should do all backend invokations only after MFP API is initialised. To do this we need to catch an event called mfpjsloaded. This is defined in `bootstrap.js` in plugins/cordova-plugin-mfp
 Changes required in `app.ts`
 
 ```sh
