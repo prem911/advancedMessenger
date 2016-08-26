@@ -110,7 +110,7 @@ $ gulp watch 'working directory should be am/advancedMessenger'
 We should do all backend invokations only after MFP API is initialised. To do this we need to catch an event called mfpjsloaded. This is defined in `bootstrap.js` in plugins/cordova-plugin-mfp
 Changes required in `app.ts`
 
-```sh
+```javascript
 import {Component, Renderer} from '@angular/core';
 import {Platform, ionicBootstrap} from 'ionic-angular';
 import {StatusBar} from 'ionic-native';
@@ -174,7 +174,7 @@ Remove the two procedures and write a new one
 <procedure name="getRating"/>
 
 Modify `employeeAdapter-impl.js`
-```sh
+```javascript
 function getRating() {
 	var input = {
 	    method : 'get',
@@ -207,12 +207,12 @@ We can test /getRating.
 
 ##### Changing the endpoint url of employeeAdapter
 Add a property in `adapter.xml`
-```sh
+```xml
 <property name="endpoint" displayName="Endpoint" defaultValue="employees"/>
 ```
 
 Modify `employeeAdapter-impl.js`
-```sh
+```javascript
 function getRating() {
 	var endpoint = MFP.Server.getPropertyValue("endpoint");
 	var input = {
@@ -251,7 +251,7 @@ Change the displayName and description to NewsJavaAdapter
 Open `JavaHTTPResource.java`
 
 Change to
-```sh
+```javascript
 public static void init() {
 	client = HttpClientBuilder.create().build();
 	host = new HttpHost("{your-mock-server}.mybluemix.net", 80, "http");
@@ -292,8 +292,102 @@ $ mfpdev adapter deploy 'optionally try out deploying an adapter from the mfpcon
 > Test the api using Swagger docs. This too has DEFAULT_SCOPE and can be tested similar to /getRating
 
 #### Invoking the JavaScript Adapter from client code
+Take a look at the Swagger Doc for /getRating url
+> http://{your-mfp-server}.mybluemix.net/mfp/api/adapters/employeeAdapter/getRating
+
+Close any editors in Visual Studio Code and open `employee-provider.ts`.
+This provider is called when Ratings page is opened in the app.
+
+```javascript
+import {Injectable} from '@angular/core';
+/*
+  Generated class for the EmployeeProvider provider.
+  See https://angular.io/docs/ts/latest/guide/dependency-injection.html
+  for more info on providers and Angular 2 DI.
+*/
+@Injectable()
+export class EmployeeProvider {
+  data: any = null;
+  constructor() {}
+  load() {
+    console.log('---> called EmployeeProvider load');  
+    if (this.data) {
+      // already loaded data
+      return Promise.resolve(this.data);
+    }
+    // don't have the data yet
+    return new Promise(resolve => {
+      // We're using Angular Http provider to request the data,
+      // then on the response it'll map the JSON data to a parsed JS object.
+      // Next we process the data and resolve the promise with the new data.
+      let dataRequest = new WLResourceRequest("/adapters/employeeAdapter/getRating", WLResourceRequest.GET);
+      dataRequest.send().then((response) => {
+        console.log('--> data loaded from adapter', response);
+        this.data = response.responseJSON.results;
+        resolve(this.data);
+      }, (failure) => {
+        console.log('--> failed to load data', failure);
+        resolve('error');
+      })
+    });
+  }
+}
+```
+
+Gulp shows errors for WLResourceRequest. To resolve this open `typings/main.d.ts` and make the following changes to include mfp core, jsonstore and mfppush
+
+```javascript
+/// <reference path="main/ambient/es6-shim/index.d.ts" />
+/// <reference path="../plugins/cordova-plugin-mfp/typings/worklight.d.ts" />
+/// <reference path="../plugins/cordova-plugin-mfp-jsonstore/typings/jsonstore.d.ts" />
+/// <reference path="../plugins/cordova-plugin-mfp-push/typings/mfppush.d.ts" />
+```
+
+> Save the changes and preview the app in the browser and look at console for log information on adapter data. With this, the getRating calls are being routed through the adapter
 
 #### Invoking the JavaHttp Adapter from client code
+Open `news-provider.ts `
 
+> Look at the Swagger Doc to get the URL for the JavaAdapter Call
+```javascript
+import {Injectable} from '@angular/core';
+/*
+  Generated class for the NewsProvider provider.
+  See https://angular.io/docs/ts/latest/guide/dependency-injection.html
+  for more info on providers and Angular 2 DI.
+*/
+@Injectable()
+export class NewsProvider {
+  data: any = null;
+  constructor() {}
+  load() {
+    console.log('---> called NewsProvider load');
+    if (this.data) {
+      // already loaded data
+      return Promise.resolve(this.data);
+    }
+    // don't have the data yet
+    return new Promise(resolve => {
+      // We're using Angular Http provider to request the data,
+      // then on the response it'll map the JSON data to a parsed JS object.
+      // Next we process the data and resolve the promise with the new data.
+      let dataRequest = new WLResourceRequest("/adapters/JavaHTTP/", WLResourceRequest.GET);
+      dataRequest.send().then((response) => {
+        console.log('--> data loaded from adapter', response);
+        this.data = response.responseJSON.news;
+        resolve(this.data);
+      }, (failure) => {
+        console.log('--> failed to load data', failure);
+        resolve('error');
+      })
+    });
+  }
+}
+```
+
+## Lab 2.64 - Securing backend calls with user authentication
+### Objectives
+- fill up
+- fill up
 
 
