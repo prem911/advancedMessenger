@@ -349,6 +349,7 @@ Gulp shows errors for WLResourceRequest. To resolve this open `typings/main.d.ts
 Open `news-provider.ts `
 
 > Look at the Swagger Doc to get the URL for the JavaAdapter Call
+
 ```javascript
 import {Injectable} from '@angular/core';
 /*
@@ -384,12 +385,6 @@ export class NewsProvider {
   }
 }
 ```
-
-## Lab 2.64 - Securing backend calls with user authentication
-### Objectives
-- fill up
-- fill up
-- 
 
 ## Lab 2.64 - Securing backend calls with user authentication
 ### Objectives
