@@ -578,6 +578,191 @@ displayLogin(msg)
 ```
 > Test this login window with wrong credentials to see the error message and the attempts remaining.
 
+## Lab 2.64 - Add push notification capabilities to mobile app and configure server side to send push messages
+### Objectives
+- Enable Push configurations in mfpconsole
+    - Add a tag
+- Create a Push Provider in client app
+    - Implement MFPPush initialize, Notification callback
+    - Implement MFPPush registerNotificationsCallback
+    - Implement MFPPush deviceRegistration
+- Send a sample Push notification
+
+#### Enable Push configurations in mfpconsole
+Open `project.properties` from advancedMessenger/platform/android folder
+Modify the last line for gcm version from latest to 9.0.2
+```xml
+cordova.system.library.2=com.google.android.gms:play-services-gcm:9.0.2
+```
+The change is required to overcome a bug in GCM latest version which doesnot allow the push notification to work
+
+> Configure Google GCM API keys:
+
+- Open [Google console](https://console.developers.google.com/iam-admin/projects?hl=en)
+- Create a project. Wait for some time
+- For GCM, Open [GCM link ](https://console.developers.google.com/apis/api/googlecloudmessaging/overview)
+- Press Enable.
+- Click "Credentials" from left side menu
+- Click "Create Credentials", click Api key and then Server Key
+- Give a name such as "push api" and click Create
+- Copy the API key
+- From google console, go to Project Settings and copy the Project number
+
+> Goto mfpconsole/Application/advancedMessenger/Push
+
+Paste API key in Server API key field
+
+Paste Project number in Sender ID field
+
+##### Add a Tag
+In Push configuration page in mfpconsole, click on "Tags" tab
+
+Create a tag by the name "am"
+> Tags are topics which are subscribed by users.
+
+#### Create a Push Provider in client app
+Goto a `Terminal` tab with current directory set to /advancedMessenger
+```sh
+$ ionic g provider pushProvider 'this creates a new provider'
+```
+
+Open `app.ts`
+
+Add an import statement
+```javascript
+import {PushProvider} from './providers/push-provider/push-provider';
+```
+Add a provider in Compoents
+```javascript
+@Component({
+  template: '<ion-nav [root]="rootPage"></ion-nav>',
+  providers: [PushProvider]
+})
+```
+Modify constructor definition to include the PushProvider
+```javascript
+constructor(private platform:Platform, renderer: Renderer, private app: App, private push: PushProvider )
+```
+Initialize the push provider in MFPInitComplete()
+```javascript
+MFPInitComplete(){
+    console.log('--> MFPInitComplete function called')
+    this.rootPage = TabsPage; 
+    this.push.init(); //init needs to be defined in PushProvider
+    this.AuthInit();
+}
+```
+Open `push-provder.ts` from providers folder
+
+Remove the Http dependency since it is not needed.
+Delete the existing function and implement a new function called init()
+
+At this stage `push-provider.ts` should look like this
+```javascript
+import {Injectable} from '@angular/core';
+@Injectable()
+export class PushProvider {
+    constructor() {}
+    init() {
+        console.log('--> PushProvider init called');
+    }
+}
+```
+##### Implement MFPPush initialize
+Modify init()
+```javascript
+init() {
+    console.log('--> PushProvider init called');
+    MFPPush.initialize(
+    function(success){
+        console.log('--> Push init success');
+    }, function(failure){
+        console.log('--> Push init failure', failure);
+    })
+}
+```
+##### Implement MFPPush registerNotificationsCallback
+Modify init()
+```javascript
+init() {
+    console.log('--> PushProvider init called');
+    MFPPush.initialize(
+    function(success){
+        console.log('--> Push init success');
+        MFPPush.registerNotificationsCallback(pushNotificationReceived);
+    }, function(failure){
+        console.log('--> Push init failure', failure);
+    })
+    
+    function pushNotificationReceived(message){
+      console.log('--> Push received', message);
+      alert(message.alert);
+    }
+}
+```
+##### Implement MFPPush deviceRegistration
+Modify init()
+```javascript
+init() {
+    console.log('--> PushProvider init called');
+    MFPPush.initialize(
+    function(success){
+        console.log('--> Push init success');
+        MFPPush.registerNotificationsCallback(pushNotificationReceived);
+        var options = {"phoneNumber": ""};
+        MFPPush.registerDevice(
+            options,
+            function(success){
+                console.log('--> Push registration success');
+                var tag = ['am'];
+                MFPPush.subscribe(
+                    tag,
+                    function(success){
+                        console.log('--> Push subscribe success');
+                    },
+                    function(failure){
+                        console.log('--> Push subscribe failure', failure);
+                    }
+                )
+            },
+            function(failure){
+                console.log('--> Push registration failure', failure);
+            }
+        )
+    }, function(failure){
+        console.log('--> Push init failure', failure);
+    })
+    
+    function pushNotificationReceived(message){
+      console.log('--> Push received', message);
+      alert(message.alert);
+    }
+}
+```
+> Open Chrome device inspect and check for errors in the console. We should see a registration failure. To overcome this, we need to update a Security Scope Element for the app.
+
+> Goto mfpconsole -> advancedMessenger/Android -> Security tab
+
+In Scope Element mapping add push.mobileclient
+
+> Refresh the application in Developer console of Chrome and review the messages in console. We should see success for registration and subscribe. This makes the emulator ready to receive the push notification
+
+#### Send a sample Push notification
+> Open mfpconsole -> advancedMessenger/Push -> Send Notifications
+
+Fill the following :
+- Send To = Devices by Tag
+- Tag Name = am
+- Notification Text = Sample Text for advanced messenger
+- Press Send
+
+Notification is received by the device.
+> Look at the Developer console for log messages from the callbacks.
+
+Kill the app in the emulator and repeat the steps to send a notification.
+
+This time the notification is received in the notification bar. Clicking on the notification opens the app and shows the alert
+
 
 
 
