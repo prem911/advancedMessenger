@@ -389,5 +389,200 @@ export class NewsProvider {
 ### Objectives
 - fill up
 - fill up
+- 
+
+## Lab 2.64 - Securing backend calls with user authentication
+### Objectives
+- User Authentication Sample from Download Center
+- Apply Scope element security to employeeAdapter
+- Apply Scope element security to Java Adapter
+- Client side changes to invoke Security Challenge
+- Test it on emulator with cdvlive
+
+#### User Authentication Sample from Download Center
+Goto mfpconsole
+> http://{your-mfp-server}.mybluemix.net/mfpconsole,
+> Click Download Center ( on the left hand menu ), goto Samples tab and download UserAuthentication Sample
+
+Close the live reload command and also close the browser tab. From now on we will test the app on an emulator
+
+```sh
+$ cd ~/Downloads/
+$ unzip UserLogin.zip
+$ mv UserLogin ../dev/workspaces/am/
+$ cd dev/workspaces/am/UserLogin/
+$ mfpdev adapter build && mfpdev adapter deploy 'To build and deploy this adapter'
+```
+
+> Goto mfpconsole and refresh the page. UserLogin adapter appears with a lock icon. It signifies that this is the security check for Authentication
+
+Open `UserLoginSecurityCheck.java`. In the validateCredentials, we have a check for username and password.
+
+#### Apply Scope element security to employeeAdapter
+
+In `adapter.xml` of employeeAdapter :
+```xml
+<procedure name="getRating" scope="restrictedData"/>
+```
+```sh
+$ cd ../employeeAdapter/
+$ mfpdev adapter build && mfpdev adapter deploy
+```
+> Goto console and click employeeAdapter. Click on Resources tab. There is a change in Security scope. Earlier it was DEFAULT_SCOPE and now it has changed to restrictedData. This is done without a server restart too!
+
+Lets create the mapping to pass this security data.
+
+Goto mfpconsole -> advancedMessenger/Android and click Security tab.
+- Scroll down to find Scope-Elements Mapping.
+- Click New. 
+- Fill restrictedData in the Scope element.
+- For Custom Security Checks, select UserLogin and press Add.
+
+#### Apply Scope element security to Java Adapter
+
+Open `JavaHTTPResource.java` from JavaHTTP
+
+Add an import statement for OAuthSecurity
+```javascript
+import com.ibm.mfp.adapter.api.OAuthSecurity;
+```
+Use this security to secure the /GET endpoint. Add the decorator @OAuthSecurity
+
+```javascript
+@GET
+@Produces("application/json")
+@OAuthSecurity(scope = "restrictedData")
+public void get(@Context HttpServletResponse response)
+    throws IOException, IllegalStateException, SAXException {
+        execute(new HttpGet("/news"), response);
+}
+```
+Lets build and deploy this adapter
+```sh
+$ cd ../JavaHTTP/
+$ mfpdev adapter build && mfpdev adapter deploy
+```
+> Goto mfpconsole and click NewsJavaAdapter. Click on Resources tab. There is a change in Security scope. Earlier it was DEFAULT_SCOPe and now it has changed to restrictedData. Note, no server restart required.
+
+#### Client side changes to invoke Security Challenge
+Open `app.ts`
+
+Let's create an Auth Handler and an Alert to grab the credentials.
+For Alert sample code, lets goto Ionic2 website.
+Open your browser, click Ionic v2 -> components -> Alerts -> Prompt Alerts
+```javascript
+AuthInit(){
+    this.AuthHandler = WL.Client.createSecurityCheckChallengeHandler("UserLogin");
+    this.AuthHandler.handleChallenge = ((response) => {
+        console.log('--> inside handleChallenge');
+        this.displayLogin(msg);
+    })
+}
+displayLogin(msg) {
+    let prompt = Alert.create({
+        title: 'Login',
+        message: msg,
+        inputs: [
+            {
+                name: 'username',
+                placeholder: 'Username'
+            },
+            {
+                name: 'password',
+                placeholder: 'Password',
+                type: 'password'
+            },
+        ],
+        buttons: [
+            {
+                text: 'Login',
+                handler: data => {
+                    console.log('--> Trying to auth with user', data.username);
+                    this.AuthHandler.submitChallengeAnswer(data);
+                }
+            }
+        ]
+    });
+    this.nav.present(prompt);
+}
+```
+We have added AuthHandler,Alert and nav above. Alert needs to referenced and we need to initialize "nav" based on its lifecycle. NavController is loaded after this view initialises.
+
+Modify an existing import statement to
+```javascript
+import {Platform, Alert, App, ionicBootstrap} from 'ionic-angular';
+```
+Add couple of private vars
+```javascript
+private AuthHandler: any;
+private nav: any;
+```
+Handle the Nav Controller life cycle
+```javascript
+ngAfterViewInit(){
+    this.nav = this.app.getActiveNav();
+}
+```
+In a `Terminal`
+```sh
+$ android avd
+```
+#### Test it on emulator with cdvlive
+Start "nexus4" ' with "Scale display to real size" option
+
+Once the emulator has launched, open another terminal window. We will launch cdvlive for the client project. cdvlive does live reload similar to the live reload in browser
+```sh
+$ cdvlive android 'Note that the current working directory should be advancedMessenger/
+```
+> This takes a while to load. Any changes to the source code is picked up by Gulp watch and is packaged to www folder. cdvlive then picks these changes and updates the app
+
+In Browser, open chrome://inspect/#devices
+
+Review the sequence of calls. There is a CORS error by google apis. Lets fix it.
+Open `schedule.ts` in app/pages/schedule
+Comment off the distance calculation block in loadSchedule()
+```javascript
+//   this.schedule.calc(geos).then((results) => {
+//       for (var i=0; i < results.length; i++) {
+//           this.delivery[i].distance = results[i].distance.text;
+//           this.delivery[i].duration = results[i].duration.text;
+//       }
+//   })
+```
+> The login credentials alert will be shown. We can experiment with giving wrong credentials. To succeed give the same string for username and password.
+Note that we didnot get any error message with the wrong credentials.
+
+Open `UserLoginSecurityCheck.java` from UserLogin Adapter.
+
+Look at createChallenge(). The challenge is returning us errorMsg and remainingAttempts.
+These are configured in the `adapter.xml`
+
+Open `adapter.xml`
+
+Lets modify the login window to use the errorMsg and remainingAttempts
+
+Open `app.ts`
+
+Modify AuthInit() to
+```javascript
+AuthInit(){
+    this.AuthHandler = WL.Client.createSecurityCheckChallengeHandler("UserLogin");
+    this.AuthHandler.handleChallenge = ((response) => {
+        console.log('--> inside handleChallenge');
+        if(response.errorMsg){
+          var msg = response.errorMsg + '<br>';
+          msg += 'Remaining attempts: ' + response.remainingAttempts;
+        }
+        this.displayLogin(msg);
+    })
+}
+```
+Modify the definition of displayLogin() to
+```javascript
+displayLogin(msg)
+```
+> Test this login window with wrong credentials to see the error message and the attempts remaining.
+
+
 
 
