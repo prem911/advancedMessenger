@@ -763,6 +763,232 @@ Kill the app in the emulator and repeat the steps to send a notification.
 
 This time the notification is received in the notification bar. Clicking on the notification opens the app and shows the alert
 
+## Lab 2.66 - Adding JSONStore to hybrid mobile app
+### Objectives
+- Implement a local storage using JSONStore
+    - Add a new Provider
+    - Add the json init callback
+    - Implement put to add data to JSONStore
+    - Implement getAll to get all the information
+    - Implement StorageProvider in news
+    - Use the new storage getAll to load all news items
 
+#### Implement a local storage using JSONStore
+Local storage will cache the result from the REST call.
+
+##### Add a new Provider
+Open a `Terminal`
+```sh
+$ ionic g provider storageProvider
+```
+
+Open `app.ts`
+Import storage-provider
+```javascript
+import {StorageProvider} from './providers/storage-provider/storage-provider';
+```
+Add this provider to Component
+```javascript
+@Component({
+  template: '<ion-nav [root]="rootPage"></ion-nav>',
+  providers: [PushProvider, StorageProvider]
+})
+```
+Add this to the constructor similar to PushProvider
+```javascript
+constructor(private platform:Platform, renderer: Renderer, private app: App, private push: PushProvider, private storage: StorageProvider)
+```
+
+##### Add the json init callback
+Similar to mfpjsloaded event, we have mfpjsonjsloaded event. 
+> This event needs to be subscribed to add all storage initializations should happen after the event it fired.
+It can be found in mfpjsonstoreready() in `bootstrap.js` under advancedMessenger/plugins/cordova-plugin-mfpjsonstore
+
+In `app.ts`, add the following after the mfpjsloaded listener
+```javascript
+renderer.listenGlobal('document', 'mfpjsonjsloaded', () => {
+    console.log('--> MFP JSONStore API init complete');
+    this.storage.init(); //storage.init() to be implemented
+    this.news.load();
+})
+```
+Open `storage-provider.ts`
+- Remove dependency to Http from the constructor and the respective imports
+- Delete the existing load function and define a new init()
+
+At this stage `storage-provider.ts` would look like this
+```javascript
+import {Injectable} from '@angular/core';
+@Injectable()
+export class StorageProvider {
+    data: any = null;
+    constructor() {}
+    init() {
+        console.log('--> JSONStore init function called');
+    }
+}
+```
+##### Initialize a collection for news items in JSONStore
+We are going to add a collections to JSONStore. This collection will have search field based on 2 attributes, i.e., text and date. This will see when we look at the json response when the existing News Tab loads.
+In `storage-provider.ts`, at this stage the init() will look like this
+```javascript
+init() {
+    console.log('--> JSONStore init function called');
+    let collections = {
+        news: {
+            searchFields: {text: 'string', date: 'string'}
+        }
+    }
+    WL.JSONStore.init(collections).then((success) => {
+        console.log('-->JSONStore init success');
+    }, (failure) => {
+        console.log('-->JSONStore init failed', failure);
+    })
+}
+```
+##### Implement put to add data to JSONStore
+In `storage-provider.ts`, add a function to StorageProvider called put(data).
+put implementation will be as follows:
+```javascript
+put(data){
+    console.log('--> JSONStore put function called');
+    let collectionName = 'news'; //has to be the same name as declared init()
+    let options = {
+        replaceCriteria: ['text', 'date'],
+        addNew: true,
+        markDirty: false
+    };
+    WL.JSONStore.get(collectionName).change(data, options).then((success) => {
+        //Note we are using change api and not add
+        //Change adds the data that is different based on options
+        console.log('--> JSONStore put success')
+    }, (failure) => {
+        console.log('--> JSONStore put failed', failure)
+    })
+}
+```
+##### Implement getAll to get all the information
+getAll is similar to implementation as put. However the differences are that we wont specify any options since we are interested to get all docs.
+Note that getAll might take a long time to return, so it should be wrapped in a Promise.
+
+Add getAll() in `storage-provider.ts`
+```javascript
+getAll() {
+    console.log('--> JSONStore get all function called');
+    return new Promise( resolve => {
+        let collectionName = 'news';
+        let options = {};
+        WL.JSONStore.get(collectionName).findAll(options).then((success) => {
+            console.log('-->JSONStore get docs success', success)
+            resolve(success);
+        }, (failure) => {
+            console.log('-->JSONStore get docs failed', failure)
+            resolve('error');
+        })
+    })
+}
+```
+##### Implement StorageProvider in news
+Open `news-provider.ts`.
+
+Add the storage-provider import
+```javascript
+import {StorageProvider} from '../storage-provider/storage-provider';
+```
+Add the reference of StorageProvider in the constructor
+```javascript
+constructor(private storage: StorageProvider) {}
+```
+Modify the old implementation of load(). This implementation was directly resolving the json returned by the adapter. However, now we will store it in the local storage.
+
+The load function will be implemented as below:
+```javascript
+load() {
+    console.log('---> called NewsProvider load');  
+    let dataRequest = new WLResourceRequest("/adapters/JavaHTTP/", WLResourceRequest.GET);
+    dataRequest.send().then((response) => {
+        console.log('--> data loaded from adapter', response);
+        this.data = response.responseJSON.news;
+        console.log('--> puttin data to JSONStore');
+        this.storage.put(this.data);
+    }, (failure) => {
+        console.log('--> failed to load data', failure);
+    })
+}
+```
+##### Use the new storage getAll to load all news items
+Now that we have the storage apis fully baked, we can modify the news view to load the data from the storage. To do that, lets make the following changes:
+
+> NewsProvider is no longer required since StorageProvider is doing this job
+
+Open `news.ts` from app/pages/news
+
+Add an import for StorageProvider
+```javascript
+import {StorageProvider} from '../../providers/storage-provider/storage-provider';
+```
+Remove the NewsProvider import
+
+Add the StorageProvider to Component and remove the NewsProvider
+```javascript
+@Component({
+  templateUrl: 'build/pages/news/news.html',
+  providers: [StorageProvider]
+})
+```
+Modify constructor to add the StorageProvider and remove the newsProvider
+```javascript
+constructor(public nav: NavController, public newsData: StorageProvider)
+```
+Use storage api getAll()
+```javascript
+loadNews() {
+    this.newsData.getAll().then((results) => {
+        console.log('---> news loaded');
+        this.news = results;
+      }, (failure) => {
+        console.log('---> failed to load news', failure);
+    })
+}
+```
+The news needs to be loaded during the app init. So, we will make the final set of changes to `app.ts`
+Import NewsProvider
+```javascript
+import {NewsProvider} from './providers/news-provider/news-provider';
+```
+Add NewsProvider to component list
+```javascript
+@Component({
+  template: '<ion-nav [root]="rootPage"></ion-nav>',
+  providers: [PushProvider, StorageProvider, NewsProvider]
+})
+```
+Change constructor to add a NewsProvider
+```javascript
+constructor(private platform:Platform, renderer: Renderer, private app: App, private push: PushProvider, private storage: StorageProvider, private news: NewsProvider)
+```
+Load the news item to the view in the mfpjsonjsloaded event callback
+```javascript
+renderer.listenGlobal('document', 'mfpjsonjsloaded', () => {
+    console.log('--> MFP JSONStore API init complete');
+    this.storage.init();
+    this.news.load();
+})
+```
+> Save and click the News tab in the app
+
+The news items are empty. Inspect the JSONStore get call. The 'date' and 'text' are under a Object called 'json'
+
+>Check the `news.html` template in app/pages/news
+
+Look at the handlebar statements to load the date and text. These need the correct Object reference of json
+
+In `news.html` do the following:
+item.json.date instead of item.date
+
+item.json.text instead of item.text
+
+> To check for duplication of news data, refresh the Developer Console. We should see the 3 items only
+> To do additional data changes, we may modify the json data from the mockserver. The app needs to be restaged. Post that we can refresh the Developer console to see the changes.
 
 
