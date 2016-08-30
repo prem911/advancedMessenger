@@ -28,7 +28,7 @@ Email > 'write your Bluemix id'
 Password > 'write your Bluemix password'
 $ cf push 'give-a-unique-name-to-your-app' -m 512M
 ```
-Open Browser and point to http://<give-a-unique-name-to-your-app>.mybluemix.net/api
+Open Browser and point to http://{give-a-unique-name-to-your-app}.mybluemix.net/api
 
 It should return **Mock APIs are running**
 
