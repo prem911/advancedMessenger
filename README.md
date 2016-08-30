@@ -48,10 +48,8 @@ Copy the Server Route and
 Click "Launch Console" and provide admin and the above password in the credentials window.
 
 #### Preview the ionic sample
-```sh
-$ cd ../advancedMessenger
-$ code . 'This opens the project in Visual Studio Code'
-```
+Open Visual Studio Code and Open Folder dev/workspaces/am
+
 click the Search icon in the left side toolbar and search for 'localhost'
 
 Goto `employee-provider.ts` and replace the url with http://{your-mock-server}.mybluemix.net/employees
