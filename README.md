@@ -92,6 +92,7 @@ $ mfpdev app register 'ensure that working directory is am/advancedMessenger'
 $ cordova prepare
 ```
 Open mfpconsole in browser ( http://{your-mfp-server}.mybluemix.net/mfpconsole ) or refresh if already open
+
 advancedMessenger is now shown in the list of Applications
 ```sh
 mfpdev app preview 'preview using mfp commands, select simple browser'
