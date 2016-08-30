@@ -64,7 +64,7 @@ Save all files
 In `Terminal`
 ```sh
 $ cd ../advancedMessenger 'make sure that you are in advancedMessenger directory'
-$ npm install 'this loads all the dependencies'
+$ sudo npm install 'this loads all the dependencies'
 $ ionic serve 'Starts serving the ionic project and opens a browser'
 ```
 Review the app and then quit ionic live reload by pressing 'q' in terminal. Close the browser tab.
