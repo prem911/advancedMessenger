@@ -252,6 +252,8 @@ Change the displayName and description to NewsJavaAdapter
 
 Open `JavaHTTPResource.java`
 
+Add import com.ibm.json.java.JSONObject;
+
 Change to
 ```javascript
 public static void init() {
