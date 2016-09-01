@@ -1,3 +1,7 @@
+These instructions are based on https://mobilefirstplatform.ibmcloud.com/labs/developers/8.0/advancedmessenger/
+
+We have video tutorials for each of the Labs.
+
 # Lets build advancedMessenger hybrid app
 ## Lab 2.62 - Adding MobileFirst SDK and registering app on server
 ### Objectives
@@ -461,7 +465,7 @@ Lets build and deploy this adapter
 $ cd ../JavaHTTP/
 $ mfpdev adapter build && mfpdev adapter deploy
 ```
-> Goto mfpconsole and click NewsJavaAdapter. Click on Resources tab. There is a change in Security scope. Earlier it was DEFAULT_SCOPe and now it has changed to restrictedData. Note, no server restart required.
+> Goto mfpconsole and click NewsJavaAdapter. Click on Resources tab. There is a change in Security scope. Earlier it was DEFAULT_SCOPE and now it has changed to restrictedData. Note, no server restart required.
 
 #### Client side changes to invoke Security Challenge
 Open `app.ts`
@@ -469,18 +473,29 @@ Open `app.ts`
 Let's create an Auth Handler and an Alert to grab the credentials.
 For Alert sample code, lets goto Ionic2 website.
 Open your browser, click Ionic v2 -> components -> Alerts -> Prompt Alerts
+
+Define a new function for Authentication and invoke it from MFPInitComplete
+```javascript
+  MFPInitComplete(){
+    console.log('--> MFPInitComplete function called')
+    this.rootPage = TabsPage; 
+
+    this.AuthInit();
+  }
+```
+
 ```javascript
 AuthInit(){
     this.AuthHandler = WL.Client.createSecurityCheckChallengeHandler("UserLogin");
     this.AuthHandler.handleChallenge = ((response) => {
         console.log('--> inside handleChallenge');
-        this.displayLogin(msg);
+        this.displayLogin();
     })
 }
-displayLogin(msg) {
+displayLogin() {
     let prompt = Alert.create({
         title: 'Login',
-        message: msg,
+        message: 'Enter credentials',
         inputs: [
             {
                 name: 'username',
@@ -510,6 +525,10 @@ We have added AuthHandler,Alert and nav above. Alert needs to referenced and we 
 Modify an existing import statement to
 ```javascript
 import {Platform, Alert, App, ionicBootstrap} from 'ionic-angular';
+```
+Change the constructor to 
+```javascript
+constructor(private platform:Platform, renderer: Renderer, private app: App )
 ```
 Add couple of private vars
 ```javascript
@@ -578,7 +597,11 @@ AuthInit(){
 ```
 Modify the definition of displayLogin() to
 ```javascript
-displayLogin(msg)
+displayLogin(msg) {
+    let prompt = Alert.create({
+        title: 'Login',
+        message: msg,
+
 ```
 > Test this login window with wrong credentials to see the error message and the attempts remaining.
 
